@@ -440,7 +440,10 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       currentText: '@',
       clearText: '@',
       closeText: '@',
-      dateDisabled: '&'
+      dateDisabled: '&',
+      minDate: '@',
+      maxDate: '@'
+
     },
     link: function(scope, element, attrs, ngModel) {
       var dateFormat,
@@ -500,6 +503,59 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       if (attrs.dateDisabled) {
         datepickerEl.attr('date-disabled', 'dateDisabled({ date: date, mode: mode })');
       }
+      function compareDates(date1, date2) {
+        if (isNaN(date1) || isNaN(date2)) {
+          return undefined;
+        }
+        else {
+          return (new Date(date1.getFullYear(), date1.getMonth(), date1.getDate()) - new Date(date2.getFullYear(), date2.getMonth(), date2.getDate()) );
+        }
+      }
+
+      function getDateLimitToCheck(limitName) {
+        var watchDate = scope.watchData[limitName];
+        if (!watchDate) {
+          return null;
+        } else {
+          return new Date(watchDate);
+        }
+      }
+
+      function isDateLimitMet(limitName, dateToCheck, viewValue) {
+        var dateCompare = compareDates(new Date(viewValue), dateToCheck);
+        if (limitName == 'minDate') {
+          return !dateCompare || dateCompare > 0;
+        } else if (limitName == 'maxDate') {
+          return !dateCompare || dateCompare < 0;
+        }
+      }
+
+      function dateLimitParseFormat(limitName, viewValue, isFormatOnly) {
+        var dateLimit = getDateLimitToCheck(limitName);
+        if (dateLimit) {
+          var isMet = isDateLimitMet(limitName, dateLimit, viewValue);
+          ngModel.$setValidity(limitName, isMet);
+          return (isFormatOnly || isMet) ? viewValue : undefined;
+        } else {
+          return viewValue;
+        }
+      }
+
+      function minLimitParse(viewValue) {
+        return dateLimitParseFormat('minDate', viewValue, false);
+      }
+
+      function minLimitFormat(viewValue) {
+        return dateLimitParseFormat('minDate', viewValue, true);
+      }
+
+      function maxLimitParse(viewValue) {
+        return dateLimitParseFormat('maxDate', viewValue, false);
+      }
+
+      function maxLimitFormat(viewValue) {
+        return dateLimitParseFormat('maxDate', viewValue, true);
+      }
 
       function parseDate(viewValue) {
         if (!viewValue) {
@@ -523,6 +579,10 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
         }
       }
       ngModel.$parsers.unshift(parseDate);
+      ngModel.$parsers.unshift(minLimitParse);
+      ngModel.$formatters.unshift(minLimitFormat);
+      ngModel.$parsers.unshift(maxLimitParse);
+      ngModel.$formatters.unshift(maxLimitFormat);
 
       // Inner change
       scope.dateSelection = function(dt) {
@@ -544,7 +604,7 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
         });
       });
 
-      // Outter change
+      // Outer change
       ngModel.$render = function() {
         var date = ngModel.$viewValue ? dateFilter(ngModel.$viewValue, dateFormat) : '';
         element.val(date);
