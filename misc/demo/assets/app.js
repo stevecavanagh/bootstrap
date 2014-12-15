@@ -1,79 +1,80 @@
 /* global FastClick, smoothScroll */
-angular.module('ui.bootstrap.demo', ['ui.bootstrap', 'plunker', 'ngTouch'], function($httpProvider){
+angular.module('ui.bootstrap.demo', ['ui.bootstrap', 'plunker', 'ngTouch'], function ($httpProvider) {
   FastClick.attach(document.body);
   delete $httpProvider.defaults.headers.common['X-Requested-With'];
-}).run(['$location', function($location){
-  //Allows us to navigate to the correct element on initialization
-  if ($location.path() !== '' && $location.path() !== '/') {
-    smoothScroll(document.getElementById($location.path().substring(1)), 500, function(el) {
-      location.replace('#' + el.id);
-    });
-  }
-}]).factory('buildFilesService', function ($http, $q) {
+})
+  .controller('MainCtrl', ['$scope', '$http', '$document', '$modal', 'orderByFilter', function ($scope, $http, $document, $modal, orderByFilter) {
+    $scope.showBuildModal = function () {
+      var modalInstance = $modal.open({
+        templateUrl: 'buildModal.html',
+        controller: 'SelectModulesCtrl',
+        resolve: {
+          modules: function (buildFilesService) {
+            return buildFilesService.getModuleMap()
+              .then(function (moduleMap) {
+                return Object.keys(moduleMap);
+              });
+          }
+        }
+      });
+    };
 
-  var moduleMap;
-  var rawFiles;
-
-  return {
-    getModuleMap: getModuleMap,
-    getRawFiles: getRawFiles,
-    get: function () {
-      return $q.all({
-        moduleMap: getModuleMap(),
-        rawFiles: getRawFiles(),
+    $scope.showDownloadModal = function () {
+      var modalInstance = $modal.open({
+        templateUrl: 'downloadModal.html',
+        controller: 'DownloadCtrl'
+      });
+    };
+  }]
+)
+  .run(['$location', function ($location) {
+    //Allows us to navigate to the correct element on initialization
+    if ($location.path() !== '' && $location.path() !== '/') {
+      smoothScroll(document.getElementById($location.path().substring(1)), 500, function (el) {
+        location.replace('#' + el.id);
       });
     }
-  };
+  }]).factory('buildFilesService', function ($http, $q) {
 
-  function getModuleMap() {
-    return moduleMap ? $q.when(moduleMap) : $http.get('assets/module-mapping.json')
-      .then(function (result) {
-        moduleMap = result.data;
-        return moduleMap;
-      });
-  }
+    var moduleMap;
+    var rawFiles;
 
-  function getRawFiles() {
-    return rawFiles ? $q.when(rawFiles) : $http.get('assets/raw-files.json')
-      .then(function (result) {
-        rawFiles = result.data;
-        return rawFiles;
-      });
-  }
+    return {
+      getModuleMap: getModuleMap,
+      getRawFiles: getRawFiles,
+      get: function () {
+        return $q.all({
+          moduleMap: getModuleMap(),
+          rawFiles: getRawFiles(),
+        });
+      }
+    };
 
-});
+    function getModuleMap() {
+      return moduleMap ? $q.when(moduleMap) : $http.get('assets/module-mapping.json')
+        .then(function (result) {
+          moduleMap = result.data;
+          return moduleMap;
+        });
+    }
+
+    function getRawFiles() {
+      return rawFiles ? $q.when(rawFiles) : $http.get('assets/raw-files.json')
+        .then(function (result) {
+          rawFiles = result.data;
+          return rawFiles;
+        });
+    }
+
+  });
 
 var builderUrl = "http://50.116.42.77:3001";
 
-function MainCtrl($scope, $http, $document, $modal, orderByFilter) {
-  $scope.showBuildModal = function() {
-    var modalInstance = $modal.open({
-      templateUrl: 'buildModal.html',
-      controller: 'SelectModulesCtrl',
-      resolve: {
-        modules: function(buildFilesService) {
-          return buildFilesService.getModuleMap()
-            .then(function (moduleMap) {
-              return Object.keys(moduleMap);
-            });
-        }
-      }
-    });
-  };
-
-  $scope.showDownloadModal = function() {
-    var modalInstance = $modal.open({
-      templateUrl: 'downloadModal.html',
-      controller: 'DownloadCtrl'
-    });
-  };
-}
-
-var SelectModulesCtrl = function($scope, $modalInstance, modules, buildFilesService) {
+var SelectModulesCtrl = function ($scope, $modalInstance, modules, buildFilesService) {
   $scope.selectedModules = [];
   $scope.modules = modules;
 
-  $scope.selectedChanged = function(module, selected) {
+  $scope.selectedChanged = function (module, selected) {
     if (selected) {
       $scope.selectedModules.push(module);
     } else {
@@ -106,50 +107,50 @@ var SelectModulesCtrl = function($scope, $modalInstance, modules, buildFilesServ
 
     function generateBuild() {
       var srcModuleNames = selectedModules
-      .map(function (module) {
-        return moduleMap[module];
-      })
-      .reduce(function (toBuild, module) {
-        addIfNotExists(toBuild, module.name);
+        .map(function (module) {
+          return moduleMap[module];
+        })
+        .reduce(function (toBuild, module) {
+          addIfNotExists(toBuild, module.name);
 
-        module.dependencies.forEach(function (depName) {
-          addIfNotExists(toBuild, depName);
-        });
-        return toBuild;
-      }, []);
+          module.dependencies.forEach(function (depName) {
+            addIfNotExists(toBuild, depName);
+          });
+          return toBuild;
+        }, []);
 
       var srcModules = srcModuleNames
-      .map(function (moduleName) {
-        return moduleMap[moduleName];
-      });
+        .map(function (moduleName) {
+          return moduleMap[moduleName];
+        });
 
       var srcModuleFullNames = srcModules
-      .map(function (module) {
-        return module.moduleName;
-      });
+        .map(function (module) {
+          return module.moduleName;
+        });
 
       var srcJsContent = srcModules
-      .reduce(function (buildFiles, module) {
-        return buildFiles.concat(module.srcFiles);
-      }, [])
-      .map(getFileContent)
-      .join('\n')
-      ;
+          .reduce(function (buildFiles, module) {
+            return buildFiles.concat(module.srcFiles);
+          }, [])
+          .map(getFileContent)
+          .join('\n')
+        ;
 
       var jsFile = createNoTplFile(srcModuleFullNames, srcJsContent);
 
       var tplModuleNames = srcModules
-      .reduce(function (tplModuleNames, module) {
-        return tplModuleNames.concat(module.tplModules);
-      }, []);
+        .reduce(function (tplModuleNames, module) {
+          return tplModuleNames.concat(module.tplModules);
+        }, []);
 
       var tplJsContent = srcModules
-      .reduce(function (buildFiles, module) {
-        return buildFiles.concat(module.tpljsFiles);
-      }, [])
-      .map(getFileContent)
-      .join('\n')
-      ;
+          .reduce(function (buildFiles, module) {
+            return buildFiles.concat(module.tpljsFiles);
+          }, [])
+          .map(getFileContent)
+          .join('\n')
+        ;
 
       var jsTplFile = createWithTplFile(srcModuleFullNames, srcJsContent, tplModuleNames, tplJsContent);
 
@@ -208,7 +209,7 @@ var SelectModulesCtrl = function($scope, $modalInstance, modules, buildFilesServ
   };
 };
 
-var DownloadCtrl = function($scope, $modalInstance) {
+var DownloadCtrl = function ($scope, $modalInstance) {
   $scope.options = {
     minified: true,
     tpls: true
@@ -247,35 +248,37 @@ var DownloadCtrl = function($scope, $modalInstance) {
 var isOldBrowser;
 (function () {
 
-    var supportsFile = (window.File && window.FileReader && window.FileList && window.Blob);
-    function failback() {
-        isOldBrowser = true;
-    }
-    /**
-     * Based on:
-     *   Blob Feature Check v1.1.0
-     *   https://github.com/ssorallen/blob-feature-check/
-     *   License: Public domain (http://unlicense.org)
-     */
-    var url = window.webkitURL || window.URL; // Safari 6 uses "webkitURL".
-    var svg = new Blob(
-        ['<svg xmlns=\'http://www.w3.org/2000/svg\'></svg>'],
-        { type: 'image/svg+xml;charset=utf-8' }
-    );
-    var objectUrl = url.createObjectURL(svg);
+  var supportsFile = (window.File && window.FileReader && window.FileList && window.Blob);
 
-    if (/^blob:/.exec(objectUrl) === null || !supportsFile) {
-      // `URL.createObjectURL` created a URL that started with something other
-      // than "blob:", which means it has been polyfilled and is not supported by
-      // this browser.
-      failback();
-    } else {
-      angular.element('<img/>')
-          .on('load', function () {
-              isOldBrowser = false;
-          })
-          .on('error', failback)
-          .attr('src', objectUrl);
-    }
+  function failback() {
+    isOldBrowser = true;
+  }
 
-  })();
+  /**
+   * Based on:
+   *   Blob Feature Check v1.1.0
+   *   https://github.com/ssorallen/blob-feature-check/
+   *   License: Public domain (http://unlicense.org)
+   */
+  var url = window.webkitURL || window.URL; // Safari 6 uses "webkitURL".
+  var svg = new Blob(
+    ['<svg xmlns=\'http://www.w3.org/2000/svg\'></svg>'],
+    {type: 'image/svg+xml;charset=utf-8'}
+  );
+  var objectUrl = url.createObjectURL(svg);
+
+  if (/^blob:/.exec(objectUrl) === null || !supportsFile) {
+    // `URL.createObjectURL` created a URL that started with something other
+    // than "blob:", which means it has been polyfilled and is not supported by
+    // this browser.
+    failback();
+  } else {
+    angular.element('<img/>')
+      .on('load', function () {
+        isOldBrowser = false;
+      })
+      .on('error', failback)
+      .attr('src', objectUrl);
+  }
+
+})();
