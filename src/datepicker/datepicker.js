@@ -522,7 +522,7 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       }
 
       function isDateLimitMet(limitName, dateToCheck, viewValue) {
-        var dateCompare = compareDates(new Date(viewValue), dateToCheck);
+        var dateCompare = compareDates(parseDate(viewValue, dateFormat) || new Date(viewValue), dateToCheck);
         if (limitName == 'minDate') {
           return !dateCompare || dateCompare > 0;
         } else if (limitName == 'maxDate') {
