@@ -585,6 +585,10 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
       ngModel.$parsers.unshift(maxLimitParse);
       ngModel.$formatters.unshift(maxLimitFormat);
 
+      ngModel.$formatters.push(function (value) {
+         return ngModel.$isEmpty(value) ? value : dateFilter(value, dateFormat);
+      });
+
       // Inner change
       scope.dateSelection = function(dt) {
         if (angular.isDefined(dt)) {
@@ -607,7 +611,7 @@ function ($compile, $parse, $document, $position, dateFilter, dateParser, datepi
 
       // Outer change
       ngModel.$render = function() {
-        var date = ngModel.$viewValue ? dateFilter(ngModel.$viewValue, dateFormat) : '';
+        var date = ngModel.$viewValue ? dateFilter(parseDate(ngModel.$viewValue), dateFormat) : '';
         element.val(date);
         scope.date = parseDate( ngModel.$modelValue );
       };
