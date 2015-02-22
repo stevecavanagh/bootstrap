@@ -1265,7 +1265,7 @@ describe('datepicker directive', function () {
         expect(inputEl).toHaveClass('ng-invalid-min-date');
         expect(inputEl).not.toHaveClass('ng-invalid-max-date');
         expect(inputEl).not.toHaveClass('ng-invalid-date');
-        expect($rootScope.date).toBeNull();
+        expect($rootScope.date).toBeUndefined();
         expect(inputEl.val()).toBe('1960-12-01');
       });
 
@@ -1278,7 +1278,7 @@ describe('datepicker directive', function () {
         expect(inputEl).toHaveClass('ng-invalid-min-date');
         expect(inputEl).not.toHaveClass('ng-invalid-max-date');
         expect(inputEl).not.toHaveClass('ng-invalid-date');
-        expect($rootScope.date).toBeNull();
+        expect($rootScope.date).toBeUndefined();
         expect(inputEl.val()).toBe('20.12.1960');
       });
 
@@ -1289,7 +1289,7 @@ describe('datepicker directive', function () {
         expect(inputEl).not.toHaveClass('ng-invalid-min-date');
         expect(inputEl).toHaveClass('ng-invalid-max-date');
         expect(inputEl).not.toHaveClass('ng-invalid-date');
-        expect($rootScope.date).toBeNull();
+        expect($rootScope.date).toBeUndefined();
         expect(inputEl.val()).toBe('2050-12-01');
       });
 
