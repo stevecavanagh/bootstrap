@@ -1190,8 +1190,12 @@ describe('datepicker directive', function () {
         $document = _$document_;
         $sniffer = _$sniffer_;
         $rootScope.isopen = true;
+        $rootScope.format='yyyy-MM-dd';
         $rootScope.date = new Date('September 30, 2010 15:30:00');
-        var wrapElement = $compile('<div><input ng-model="date" datepicker-popup is-open="isopen"><div>')($rootScope);
+        $rootScope.minimumDate =  new Date('January 1, 1970');
+        $rootScope.maximumDate =  new Date('January 1, 2020');
+        $rootScope.dateDisabledHandler = jasmine.createSpy('dateDisabledHandler');
+        var wrapElement = $compile('<div><input ng-model="date" min-date = "minimumDate" max-date = "maximumDate" date-disabled="dateDisabledHandler(date, mode)" datepicker-popup="{{format}}" is-open="isopen"><div>')($rootScope);
         $rootScope.$digest();
         assignElements(wrapElement);
       }));
@@ -1229,7 +1233,43 @@ describe('datepicker directive', function () {
         $rootScope.date = new Date('January 10, 1983 10:00:00');
         $rootScope.$digest();
         expect(inputEl.val()).toBe('1983-01-10');
+        expect(inputEl).not.toHaveClass('ng-invalid');
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
       });
+
+      it('updates the input correctly when model changes to a date prior to minimum date', function() {
+        $rootScope.date = new Date('January 10, 1963 10:00:00');
+        $rootScope.$digest();
+        expect(inputEl.val()).toBe('1963-01-10');
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).toHaveClass('ng-invalid-min-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+      });
+
+      it('input is not marked with invalid minimum date when minimum is not a valid date', function() {
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+        $rootScope.minimumDate = 'pizza';
+        $rootScope.$digest();
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+      });
+
+      it('updates the input correctly when model changes to a date past the maximum date', function() {
+        $rootScope.date = new Date('January 10, 2023 10:00:00');
+        $rootScope.$digest();
+        expect(inputEl.val()).toBe('2023-01-10');
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).toHaveClass('ng-invalid-max-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+      });
+
+      it('input is not marked with invalid maximum date when maximum is not a valid date', function() {
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+        $rootScope.maximumDate =  new Date('pizza');
+        $rootScope.$digest();
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+      });
+
 
       it('closes the dropdown when a day is clicked', function() {
         expect(dropdownEl.css('display')).not.toBe('none');
@@ -1281,6 +1321,40 @@ describe('datepicker directive', function () {
         expect(inputEl).not.toHaveClass('ng-invalid');
         expect(inputEl).not.toHaveClass('ng-invalid-date');
       });
+      it('sets `ng-invalid` for date prior to minimum date', function() {
+        changeInputValueTo(inputEl, '1960-12-01');
+
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).toHaveClass('ng-invalid-min-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-date');
+        expect($rootScope.date).toBeUndefined();
+        expect(inputEl.val()).toBe('1960-12-01');
+      });
+
+      it('sets `ng-invalid` for date (european format) prior to minimum date', function() {
+        $rootScope.format='dd.MM.yyyy';
+        $rootScope.$digest();
+        changeInputValueTo(inputEl, '20.12.1960');
+
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).toHaveClass('ng-invalid-min-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-date');
+        expect($rootScope.date).toBeUndefined();
+        expect(inputEl.val()).toBe('20.12.1960');
+      });
+
+      it('sets `ng-invalid` for date past the maximum date', function() {
+        changeInputValueTo(inputEl, '2050-12-01');
+
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+        expect(inputEl).toHaveClass('ng-invalid-max-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-date');
+        expect($rootScope.date).toBeUndefined();
+        expect(inputEl.val()).toBe('2050-12-01');
+      });
 
       describe('focus', function () {
         beforeEach(function() {
@@ -1316,13 +1390,13 @@ describe('datepicker directive', function () {
           expect(dropdownEl).toBeHidden();
           expect(document.activeElement.tagName).toBe('INPUT');
         });
-        
+
         it('stops the ESC key from propagating if the dropdown is open, but not when closed', function() {
           expect(dropdownEl).not.toBeHidden();
 
           dropdownEl.find('button').eq(0).focus();
           expect(document.activeElement.tagName).toBe('BUTTON');
-          
+
           var documentKey = -1;
           var getKey = function(evt) { documentKey = evt.which; };
           $document.bind('keydown', getKey);
@@ -1331,10 +1405,10 @@ describe('datepicker directive', function () {
           $rootScope.$digest();
           expect(dropdownEl).toBeHidden();
           expect(documentKey).toBe(-1);
-          
+
           triggerKeyDown(inputEl, 'esc');
           expect(documentKey).toBe(27);
-          
+
           $document.unbind('keydown', getKey);
         });
       });
