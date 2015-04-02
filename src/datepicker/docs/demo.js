@@ -1,11 +1,11 @@
 angular.module('ui.bootstrap.demo').controller('DatepickerDemoCtrl', function ($scope) {
   $scope.today = function() {
-    $scope.dt = new Date();
+    $scope.pickerDate.dt = new Date();
   };
   $scope.today();
 
   $scope.clear = function () {
-    $scope.dt = null;
+    $scope.pickerDate.dt = null;
   };
 
   // Disable weekend selection
