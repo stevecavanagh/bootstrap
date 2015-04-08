@@ -1194,7 +1194,6 @@ describe('datepicker directive', function () {
         $rootScope.date = new Date('September 30, 2010 15:30:00');
         $rootScope.minimumDate =  new Date('January 1, 1970');
         $rootScope.maximumDate =  new Date('January 1, 2020');
-        $rootScope.dateDisabledHandler = jasmine.createSpy('dateDisabledHandler');
         var wrapElement = $compile('<div><input ng-model="date" min-date = "minimumDate" max-date = "maximumDate" date-disabled="dateDisabledHandler(date, mode)" datepicker-popup="{{format}}" is-open="isopen"><div>')($rootScope);
         $rootScope.$digest();
         assignElements(wrapElement);
@@ -1343,6 +1342,19 @@ describe('datepicker directive', function () {
         expect(inputEl).not.toHaveClass('ng-invalid-date');
         expect($rootScope.date).toBeUndefined();
         expect(inputEl.val()).toBe('20.12.1960');
+      });
+
+      it('sets `ng-invalid` for an invalid date format (european style) after the maximum date', function() {
+        $rootScope.format='dd.MM.yyyy';
+        $rootScope.$digest();
+        changeInputValueTo(inputEl, '20.12.20190');
+
+        expect(inputEl).toHaveClass('ng-invalid');
+        expect(inputEl).not.toHaveClass('ng-invalid-min-date');
+        expect(inputEl).not.toHaveClass('ng-invalid-max-date');
+        expect(inputEl).toHaveClass('ng-invalid-date');
+        expect($rootScope.date).toBeUndefined();
+        expect(inputEl.val()).toBe('20.12.20190');
       });
 
       it('sets `ng-invalid` for date past the maximum date', function() {
