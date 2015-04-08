@@ -9,39 +9,66 @@ angular.module('ui.bootstrap.dateparser', [])
   var formatCodeToRegex = {
     'yyyy': {
       regex: '\\d{4}',
-      apply: function(value) { this.year = +value; }
+      apply: function (value) {
+          this.year.use++;
+          this.year.value = +value;
+      }
     },
     'yy': {
       regex: '\\d{2}',
-      apply: function(value) { this.year = +value + 2000; }
+      apply: function (value) {
+          this.year.use++;
+          this.year.value = +value + 2000;
+      }
     },
     'y': {
       regex: '\\d{1,4}',
-      apply: function(value) { this.year = +value; }
+      apply: function (value) {
+          this.year.use++;
+          this.year.value = +value;
+      }
     },
     'MMMM': {
       regex: $locale.DATETIME_FORMATS.MONTH.join('|'),
-      apply: function(value) { this.month = $locale.DATETIME_FORMATS.MONTH.indexOf(value); }
+      apply: function (value) {
+          this.month.use++;
+          this.month.value = $locale.DATETIME_FORMATS.MONTH.indexOf(value);
+      }
     },
     'MMM': {
       regex: $locale.DATETIME_FORMATS.SHORTMONTH.join('|'),
-      apply: function(value) { this.month = $locale.DATETIME_FORMATS.SHORTMONTH.indexOf(value); }
+      apply: function (value) {
+          this.month.use++;
+          this.month.value = $locale.DATETIME_FORMATS.SHORTMONTH.indexOf(value);
+      }
     },
     'MM': {
       regex: '0[1-9]|1[0-2]',
-      apply: function(value) { this.month = value - 1; }
+      apply: function (value) {
+          this.month.use++;
+          this.month.value = value - 1;
+      }
     },
     'M': {
       regex: '[1-9]|1[0-2]',
-      apply: function(value) { this.month = value - 1; }
+      apply: function (value) {
+          this.month.use++;
+          this.month.value = value - 1;
+      }
     },
     'dd': {
       regex: '[0-2][0-9]{1}|3[0-1]{1}',
-      apply: function(value) { this.date = +value; }
+      apply: function (value) {
+          this.date.use++;
+          this.date.value = +value;
+      }
     },
     'd': {
       regex: '[1-2]?[0-9]{1}|3[0-1]{1}',
-      apply: function(value) { this.date = +value; }
+      apply: function (value) {
+          this.date.use++;
+          this.date.value = +value;
+      }
     },
     'EEEE': {
       regex: $locale.DATETIME_FORMATS.DAY.join('|')
@@ -100,6 +127,8 @@ angular.module('ui.bootstrap.dateparser', [])
       }
     });
 
+
+
     return {
       regex: new RegExp('^' + regex.join('') + '$'),
       map: orderByFilter(map, 'index')
@@ -114,8 +143,8 @@ angular.module('ui.bootstrap.dateparser', [])
     format = $locale.DATETIME_FORMATS[format] || format;
     format = format.replace(SPECIAL_CHARACTERS_REGEXP, '\\$&');
 
-    if ( !this.parsers[format] ) {
-      this.parsers[format] = createParser(format);
+    if (!this.parsers[format]) {
+        this.parsers[format] = createParser(format);
     }
 
     var parser = this.parsers[format],
@@ -124,7 +153,15 @@ angular.module('ui.bootstrap.dateparser', [])
         results = input.match(regex);
 
     if ( results && results.length ) {
-      var fields = { year: 1900, month: 0, date: 1, hours: 0, minutes: 0, seconds: 0, milliseconds: 0 }, dt;
+        var fields = {
+          year: {use: 0, value: 1900},
+          month: {use: 0, value: 0},
+          date: {use: 0, value: 1},
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          milliseconds: 0
+    }, dt;
 
       for( var i = 1, n = results.length; i < n; i++ ) {
         var mapper = map[i-1];
@@ -134,7 +171,7 @@ angular.module('ui.bootstrap.dateparser', [])
       }
 
       if ( isValid(fields.year, fields.month, fields.date) ) {
-        dt = new Date(fields.year, fields.month, fields.date, fields.hours, fields.minutes, fields.seconds, fields.milliseconds);
+        dt = new Date(fields.year.value, fields.month.value, fields.date.value, fields.hours, fields.minutes, fields.seconds, fields.milliseconds);
       }
 
       return dt;
@@ -144,16 +181,16 @@ angular.module('ui.bootstrap.dateparser', [])
   // Check if date is valid for specific month (and year for February).
   // Month: 0 = Jan, 1 = Feb, etc
   function isValid(year, month, date) {
-    if (date < 1) {
+    if (year.use > 1||month.use > 1||date.use > 1||date.value < 1) {
       return false;
     }
 
-    if ( month === 1 && date > 28) {
-        return date === 29 && ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0);
+    if ( month.value === 1 && date.value > 28) {
+        return date.value === 29 && ((year.value % 4 === 0 && year.value % 100 !== 0) || year.value % 400 === 0);
     }
 
-    if ( month === 3 || month === 5 || month === 8 || month === 10) {
-        return date < 31;
+    if (month.value === 3 || month.value === 5 || month.value === 8 || month.value === 10) {
+        return date.value < 31;
     }
 
     return true;
