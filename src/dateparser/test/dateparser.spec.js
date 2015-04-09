@@ -109,7 +109,7 @@ describe('date parser', function () {
   });
 
   it('should not parse if invalid format is specified', function() {
-    expect(dateParser.parse('20.12.20190', 'dd.MM.yyyyy')).toBeUndefined();
+    expect(dateParser.parse('20.12.2019', 'dd.MM.yyyyy')).toBeUndefined();
   });
   it('should not parse if invalid value is specified', function() {
     expect(dateParser.parse('20.12.20190', 'dd.MM.yyyy')).toBeUndefined();
