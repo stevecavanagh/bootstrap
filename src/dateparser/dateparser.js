@@ -220,6 +220,10 @@ angular.module('ui.bootstrap.dateparser', [])
           format[i] = '$';
         }
         format = format.join('');
+        var dupe = format.indexOf(data.key[0]);
+        if (dupe > -1 && !(format.slice(dupe, dupe + 3) === 'ss\\')) {
+          throw new Error('Invalid date format string.');
+        }
 
         map.push({
           index: index,

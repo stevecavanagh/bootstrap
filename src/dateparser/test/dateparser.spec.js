@@ -391,6 +391,15 @@ describe('date parser', function() {
     expect(dateParser.init).toHaveBeenCalled();
   }));
 
+  it('should not parse if invalid format is specified', function () {
+    expect(function () {
+      dateParser.parse('20.12.20190', 'dd.MM.yyyyy');
+    }).toThrow(new Error('Invalid date format string.'));
+  });
+
+  it('should not parse if invalid value is specified', function () {
+    expect(dateParser.parse('20.12.20190', 'dd.MM.yyyy')).toBeUndefined();
+  });
 
   describe('timezone functions', function() {
     describe('toTimezone', function() {
