@@ -95,6 +95,10 @@ angular.module('ui.bootstrap.dateparser', [])
           format[i] = '$';
         }
         format = format.join('');
+        var dupe=format.indexOf(code[0]);
+        if (dupe>-1){
+          throw new Error('Invalid date format string.');
+        }
 
         map.push({ index: index, apply: data.apply });
       }
